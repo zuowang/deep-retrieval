@@ -15,7 +15,13 @@ class NormalizeLayer(caffe.Layer):
         top[0].data[:] = bottom[0].data / np.expand_dims(self.eps + np.sqrt((bottom[0].data ** 2).sum(axis=1)), axis=1)
 
     def backward(self, top, propagate_down, bottom):
-        raise NotImplementedError("Backward pass not supported with this implementation")
+        """Get top diff and compute diff in bottom."""
+        if propagate_down[0]:
+            tmp = np.expand_dims(self.eps + (top[0].data * top[0].diff ).sum(axis=1), axis=1)
+            bottom[0].diff[:] = tmp * top[0].data
+            bottom[0].diff[:] = top[0].diff - bottom[0].diff
+            bottom[0].diff[:] = bottom[0].diff / np.expand_dims(self.eps + np.sqrt((bottom[0].data ** 2).sum(axis=1)), axis=1)
+        #raise NotImplementedError("Backward pass not supported with this implementation")
 
 
 class AggregateLayer(caffe.Layer):
@@ -32,4 +38,9 @@ class AggregateLayer(caffe.Layer):
         top[0].data[:] = bottom[0].data.sum(axis=0)
 
     def backward(self, top, propagate_down, bottom):
-        raise NotImplementedError("Backward pass not supported with this implementation")
+        """Get top diff and compute diff in bottom."""
+        if propagate_down[0]:
+            num = bottom[0].data.shape[0]
+            for i in range(num):
+                bottom[0].diff[i] = top[0].diff[0]
+        #raise NotImplementedError("Backward pass not supported with this implementation")
